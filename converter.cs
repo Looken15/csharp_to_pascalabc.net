@@ -18,6 +18,8 @@ namespace _123
     {
         static async Task Main(string[] args)
         {
+            Console.WriteLine("Введите путь к преобразовываемому файлу решения:");
+            var answ = Console.ReadLine();
             // Attempt to set the version of MSBuild.
             var visualStudioInstances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
             var instance = visualStudioInstances.Length == 1
@@ -38,7 +40,7 @@ namespace _123
                 // Print message for WorkspaceFailed event to help diagnosing project load failures.
                 //workspace.WorkspaceFailed += (o, e) => Console.WriteLine(e.Diagnostic.Message);
 
-                var solutionPath = "C:/Users/Tema-/Desktop/ex/ex.sln";
+                var solutionPath = answ;
                 //Console.WriteLine($"Loading solution '{solutionPath}'");
 
                 // Attach progress reporter so we print projects as they are loaded.
@@ -57,6 +59,8 @@ namespace _123
 
                 PascalVisitor visitor = new PascalVisitor();
                 visitor.Visit(tree.GetRoot());
+
+                Console.WriteLine("Результат сохранен в файле result.pas");
             }
         }
 
@@ -65,13 +69,13 @@ namespace _123
             StreamWriter sw;
             public PascalVisitor()
             {
-                sw = new StreamWriter(File.Create("C:/Users/Tema-/Desktop/123/result.pas"));
+                sw = new StreamWriter(File.Create("result.pas"));
                 sw.Close();
             }
 
             public void Visit(SyntaxToken token)
             {
-                using (sw = new StreamWriter("C:/Users/Tema-/Desktop/123/result.pas", true))
+                using (sw = new StreamWriter("result.pas", true))
                 {
                     if (token.HasLeadingTrivia)
                         foreach (var lt in token.LeadingTrivia)

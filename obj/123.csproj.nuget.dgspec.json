@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Tema-\\Desktop\\123\\123.csproj": {}
+    "C:\\Users\\Tema-\\Desktop\\123\\csharp_to_pascalabc.net\\123.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Tema-\\Desktop\\123\\123.csproj": {
+    "C:\\Users\\Tema-\\Desktop\\123\\csharp_to_pascalabc.net\\123.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Tema-\\Desktop\\123\\123.csproj",
+        "projectUniqueName": "C:\\Users\\Tema-\\Desktop\\123\\csharp_to_pascalabc.net\\123.csproj",
         "projectName": "123",
-        "projectPath": "C:\\Users\\Tema-\\Desktop\\123\\123.csproj",
+        "projectPath": "C:\\Users\\Tema-\\Desktop\\123\\csharp_to_pascalabc.net\\123.csproj",
         "packagesPath": "C:\\Users\\Tema-\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Tema-\\Desktop\\123\\obj\\",
+        "outputPath": "C:\\Users\\Tema-\\Desktop\\123\\csharp_to_pascalabc.net\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Tema-\\AppData\\Roaming\\NuGet\\NuGet.Config",
