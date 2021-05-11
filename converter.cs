@@ -63,7 +63,6 @@ namespace _123
                 Console.WriteLine("Результат сохранен в файле result.pas");
             }
         }
-
         public class PascalVisitor : CSharpSyntaxVisitor
         {
             StreamWriter sw;
@@ -72,7 +71,6 @@ namespace _123
                 sw = new StreamWriter(File.Create("result.pas"));
                 sw.Close();
             }
-
             public void Visit(SyntaxToken token)
             {
                 using (sw = new StreamWriter("result.pas", true))
@@ -133,7 +131,7 @@ namespace _123
                         return;
                     }
                     else
-                    if (token.ValueText == ")" && token.Parent.Kind() == SyntaxKind.WhileStatement)
+                    if (token.ValueText == ")" && token.Parent != null && token.Parent.Kind() == SyntaxKind.WhileStatement)
                     {
                         sw.Write(") do\n");
                         return;
@@ -142,15 +140,26 @@ namespace _123
                     if (token.IsKind(SyntaxKind.IntKeyword) || token.IsKind(SyntaxKind.DoubleKeyword) || token.IsKind(SyntaxKind.StringKeyword)
                         || token.IsKind(SyntaxKind.BoolKeyword) || token.IsKind(SyntaxKind.CharKeyword) || token.IsKind(SyntaxKind.LongKeyword))
                     {
-                        if (token.Parent != null
+                        if (token.Parent != null && token.Parent.Parent != null
                             && token.Parent.Parent.ChildNodes().Any(x => x.IsKind(SyntaxKind.VariableDeclarator) && x.ChildNodes().Count() != 0))
                         {
                             sw.Write("var ");
                             return;
                         }
-                        if (token.Parent != null && token.Parent.Parent.IsKind(SyntaxKind.ArrayType))
+                        if (token.Parent != null && token.Parent.Parent != null && token.Parent.Parent.IsKind(SyntaxKind.ArrayType)
+                            && !token.Parent.Parent.Parent.IsKind(SyntaxKind.ArrayCreationExpression))
                         {
                             sw.Write("var ");
+                            return;
+                        }
+                        if (token.ValueText == "int")
+                        {
+                            sw.Write("Integer");
+                            return;
+                        }
+                        if (token.ValueText == "double" || token.ValueText == "float")
+                        {
+                            sw.Write("real");
                             return;
                         }
                         //return;
@@ -186,7 +195,6 @@ namespace _123
                             }
                 }
             }
-
             public override void Visit(SyntaxNode node)
             {
                 //Compilation Unit
@@ -373,17 +381,64 @@ namespace _123
                 if (node.IsKind(SyntaxKind.ElementAccessExpression))
                 {
                     VisitElementAccessExpression((ElementAccessExpressionSyntax)node);
-                } 
+                }
                 else
 
                 if (node.IsKind(SyntaxKind.BracketedArgumentList))
                 {
                     VisitBracketedArgumentList((BracketedArgumentListSyntax)node);
                 }
-                
+                else
+
+                if (node.IsKind(SyntaxKind.ParameterList))
+                {
+                    VisitParameterList((ParameterListSyntax)node);
+                }
+                else
+
+                if (node.IsKind(SyntaxKind.Parameter))
+                {
+                    VisitParameter((ParameterSyntax)node);
+                }
+                else
+
+                if (node.IsKind(SyntaxKind.ReturnStatement))
+                {
+                    VisitReturnStatement((ReturnStatementSyntax)node);
+                }
+                else
+
+                if (node.IsKind(SyntaxKind.ArrayCreationExpression))
+                {
+                    VisitArrayCreationExpression((ArrayCreationExpressionSyntax)node);
+                }
+                else
+
+                if (node.IsKind(SyntaxKind.ArrayRankSpecifier))
+                {
+                    VisitArrayRankSpecifier((ArrayRankSpecifierSyntax)node);
+                }
+                else
+
+                if (node.IsKind(SyntaxKind.ForEachStatement))
+                {
+                    VisitForEachStatement((ForEachStatementSyntax)node);
+                }    
+                else
+
+                if (node.IsKind(SyntaxKind.PostIncrementExpression) || node.IsKind(SyntaxKind.PostDecrementExpression))
+                {
+                    VisitPostfixUnaryExpression((PostfixUnaryExpressionSyntax)node);
+                }
+                else
+
+                if (node.IsKind(SyntaxKind.PreIncrementExpression) || node.IsKind(SyntaxKind.PreDecrementExpression))
+                {
+                    VisitPrefixUnaryExpression((PrefixUnaryExpressionSyntax)node);
+                }
+
 
             }
-
             public override void VisitCompilationUnit(CompilationUnitSyntax node)
             {
                 foreach (var child_node in node.ChildNodes())
@@ -414,17 +469,38 @@ namespace _123
             }
             public override void VisitClassDeclaration(ClassDeclarationSyntax node)
             {
-                Visit(node.ChildNodes().First());
+                foreach (var child_node in node.ChildNodes())
+                {
+                    Visit(child_node);
+                }
             }
             public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
             {
                 Visit(SyntaxFactory.Literal("\n"));
-                foreach (var child_node in node.ChildNodes())
+                if (node.Identifier.ValueText == "Main")
                 {
-                    if (child_node.IsKind(SyntaxKind.Block))
+                    Visit(node.ChildNodes().Last());
+                }
+                else
+                {
+                    var pt = node.ReturnType;
+                    if (pt.ToString() == "void")
                     {
-                        Visit(child_node);
+                        Visit(SyntaxFactory.Literal("procedure "));
+                        Visit(node.Identifier);
+                        Visit(node.ParameterList);
+                        Visit(SyntaxFactory.Literal(";\n"));
                     }
+                    else
+                    {
+                        Visit(SyntaxFactory.Literal("function "));
+                        Visit(node.Identifier);
+                        Visit(node.ParameterList);
+                        Visit(SyntaxFactory.Literal(": "));
+                        Visit(pt.WithoutTrivia());
+                        Visit(SyntaxFactory.Literal(";\n"));
+                    }
+                    Visit(node.ChildNodes().Last());
                 }
                 //Visit(SyntaxFactory.Literal("."));
             }
@@ -437,7 +513,7 @@ namespace _123
                     if (child_node.IsToken)
                         Visit(child_node.AsToken());
                 }
-                if (node.Parent.Kind() == SyntaxKind.MethodDeclaration)
+                if (node.Parent.Kind() == SyntaxKind.MethodDeclaration && node.Parent.ChildTokens().ElementAt(1).ValueText == "Main")
                 {
                     Visit(SyntaxFactory.Literal(".\n"));
                 }
@@ -696,6 +772,103 @@ namespace _123
                         Visit(child_node.AsToken());
                 }
             }
+            public override void VisitParameterList(ParameterListSyntax node)
+            {
+                foreach (var child_node in node.ChildNodesAndTokens())
+                {
+                    if (child_node.IsNode)
+                        Visit(child_node.AsNode());
+                    if (child_node.IsToken)
+                    {
+                        if (child_node.AsToken().ValueText == ",")
+                            Visit(SyntaxFactory.Literal("; "));
+                        else
+                            Visit(child_node.AsToken().WithoutTrivia());
+                    }
+                }
+            }
+            public override void VisitParameter(ParameterSyntax node)
+            {
+                Visit(node.Identifier);
+                Visit(SyntaxFactory.Literal(": "));
+                var a = node.Type.WithoutTrivia();
+                Visit(a);
+            }
+            public override void VisitReturnStatement(ReturnStatementSyntax node)
+            {
+                Visit(SyntaxFactory.Literal("\tResult := "));
+                int i = 0;
+                foreach (var child_node in node.ChildNodesAndTokens())
+                {
+                    if (i != 0)
+                    {
+                        if (child_node.IsNode)
+                            Visit(child_node.AsNode());
+                        if (child_node.IsToken)
+                            Visit(child_node.AsToken());
+                    }
+                    i++;
+                }
+            }
+            public override void VisitArrayCreationExpression(ArrayCreationExpressionSyntax node)
+            {
+                foreach (var child_node in node.ChildNodesAndTokens())
+                {
+                    if (child_node.IsNode)
+                        Visit(child_node.AsNode());
+                    if (child_node.IsToken)
+                        Visit(child_node.AsToken());
+                }
+            }
+            public override void VisitArrayRankSpecifier(ArrayRankSpecifierSyntax node)
+            {
+                if (node.Parent.Parent.Kind() != SyntaxKind.VariableDeclaration)
+                    foreach (var child_node in node.ChildNodesAndTokens())
+                    {
+                        if (child_node.IsNode)
+                            Visit(child_node.AsNode());
+                        if (child_node.IsToken)
+                            Visit(child_node.AsToken());
+                    }
+            }
+            public override void VisitForEachStatement(ForEachStatementSyntax node)
+            {
+                foreach (var child_node in node.ChildNodesAndTokens())
+                {
+                    if (child_node.IsNode)
+                    {
+                        if (child_node.AsNode().IsKind(SyntaxKind.Block))
+                            Visit(SyntaxFactory.Literal(" do \n"));
+                        Visit(child_node.AsNode());
+                    }
+                        
+                    if (child_node.IsToken && child_node.AsToken().ValueText != "(" && child_node.AsToken().ValueText != ")")
+                        Visit(child_node.AsToken());
+                }
+            }
+
+            //TODO
+
+            //public override void VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
+            //{
+            //    foreach (var child_node in node.ChildNodesAndTokens())
+            //    {
+            //        if (child_node.IsNode)
+            //            Visit(child_node.AsNode());
+            //        if (child_node.IsToken)
+            //            Visit(child_node.AsToken());
+            //    }
+            //}
+            //public override void VisitPostfixUnaryExpression(PostfixUnaryExpressionSyntax node)
+            //{
+            //    foreach (var child_node in node.ChildNodesAndTokens())
+            //    {
+            //        if (child_node.IsNode)
+            //            Visit(child_node.AsNode());
+            //        if (child_node.IsToken)
+            //            Visit(child_node.AsToken());
+            //    }
+            //}
 
         }
 
